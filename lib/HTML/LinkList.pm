@@ -1103,7 +1103,7 @@ See L</link_list> for the formatting options.
 
 The label of the required link.  If there is no label,
 this uses the base-name of the last part of the link,
-capitalizing it and replacing underscores with spaces.
+capitalizing it and replacing underscores and dashes with spaces.
 
 =item this_link
 
@@ -1173,6 +1173,7 @@ sub make_item {
 	
 	# prettify
 	$label =~ s#_# #g;
+	$label =~ s#-# #g;
 	$label =~ s/([-\w]+)/\u\L$1/g;
     }
     # if we are hiding the extensions of files
