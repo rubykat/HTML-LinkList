@@ -8,11 +8,11 @@ HTML::LinkList - Create a 'smart' list of HTML links.
 
 =head1 VERSION
 
-This describes version B<0.1502> of HTML::LinkList.
+This describes version B<0.1503> of HTML::LinkList.
 
 =cut
 
-our $VERSION = '0.1502';
+our $VERSION = '0.1503';
 
 =head1 SYNOPSIS
 
