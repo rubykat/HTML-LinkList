@@ -1022,10 +1022,10 @@ sub nav_tree {
 
     # correct the current_url
     $args{current_url} = make_canonical($args{current_url});
-    my $current_is_index = ($args{current_url} =~ m#/$#);
+    my $current_is_index = ($args{current_url} =~ m!/$!o);
     my %current_parents = extract_current_parents(%args);
 
-    # set the end depth if isn't already set
+    # set the end depth if is not already set
     # if this is an index-page, then make the depth its depth + 1
     # if this is a content-page, make the depth its depth
     my $current_url_depth = path_depth($args{current_url});
@@ -1157,24 +1157,24 @@ sub make_item {
     if (!$label)
     {
 	$label = $link if !$label;
-	if ($link =~ /([-\w]+)\.\w+$/) # file
+	if ($link =~ /([-\w]+)\.\w+$/o) # file
 	{
 	    $label = $1;
 	}
-	elsif ($link =~ /([-\w]+)\/?$/) # dir
+	elsif ($link =~ /([-\w]+)\/?$/o) # dir
 	{
 	    $label = $1;
 	}
 	else # give up
 	{
 	    $label = $link;
-	    $label =~ s#/# :: #g;
+	    $label =~ s#/# :: #go;
 	}
 	
 	# prettify
-	$label =~ s#_# #g;
-	$label =~ s#-# #g;
-	$label =~ s/([-\w]+)/\u\L$1/g;
+	$label =~ s#_# #go;
+	$label =~ s#-# #go;
+	$label =~ s/([-\w]+)/\u\L$1/go;
     }
     # if we are hiding the extensions of files
     # we need to display an extensionless link
@@ -1182,7 +1182,7 @@ sub make_item {
     my $display_link = $link;
     if ($args{hide_ext})
     {
-	if ($link =~ /(.*)\.[-\w]+$/) # file
+	if ($link =~ /(.*)\.[-\w]+$/o) # file
 	{
 	    $display_link = $1;
 	}
@@ -1250,17 +1250,17 @@ sub make_canonical {
     my $url = shift;
 
     return $url if (!$url);
-    if ($url =~ m#^(/)index\.\w+$#)
+    if ($url =~ m#^/index\.\w+$#o)
+    {
+	$url = '/';
+    }
+    elsif ($url =~ m#^(.*/)index\.\w+$#o)
     {
 	$url = $1;
     }
-    elsif ($url =~ m#^(.*/)index\.\w+$#)
+    elsif ($url =~ m#/[-\w]+$#o) # no dots; a directory
     {
-	$url = $1;
-    }
-    elsif ($url =~ m#/[-\w]+$#) # no dots; a directory
-    {
-	$url .= '/'; # add the slash
+	$url = join('', $url, '/'); # add the slash
     }
     return $url;
 } # make_canonical
@@ -1280,13 +1280,13 @@ sub get_index_path {
 
     return $url if (!$url);
     $url = make_canonical($url);
-    if ($url =~ m#^(.*)/[-\w]+\.\w+$#)
+    if ($url =~ m#^(.*)/[-\w]+\.\w+$#o)
     {
 	$url = $1;
     }
-    elsif ($url ne '/')
+    elsif ($url ne '/' and $url =~ m!/$!o)
     {
-	$url =~ s#/$##;
+	chop $url;
     }
     return $url;
 } # get_index_path
@@ -1304,7 +1304,7 @@ sub get_index_parent {
 
     return $url if (!$url);
     $url = get_index_path($url);
-    if ($url =~ m#^(.*)/[-\w]+$#)
+    if ($url =~ m#^(.*)/[-\w]+$#o)
     {
 	$url = $1;
     }
@@ -1322,10 +1322,11 @@ sub path_depth {
     my $url = shift;
 
     return 0 if ($url eq '/'); # root is zero
-    $url =~ s#/$##; # remove trailing /
-    $url =~ s#^/##; # remove leading /
-    my @url = split('/', $url);
-    return scalar @url;
+    if ($url =~ m!/$!o) # remove trailing /
+    {
+	chop $url;
+    }
+    return scalar ($url =~ tr!/!/!);
 } # path_depth
  
 =head2 link_is_active
@@ -1343,13 +1344,12 @@ sub link_is_active {
 		current_url=>'',
 		@_
 	       );
-    my $link = make_canonical($args{this_link});
-    my $current_url = $args{current_url};
-
     # if there is no current link, is not active.
-    return 0 if (!$current_url);
+    return 0 if (!$args{current_url});
 
-    return 1 if ($link eq $current_url);
+    my $link = make_canonical($args{this_link});
+
+    return 1 if ($link eq $args{current_url});
     return 0;
 
 } # link_is_active
@@ -1586,7 +1586,7 @@ sub build_lol {
 	my $path = $paths_ref->[0];
 	my $can_path = make_canonical($path);
 	my $path_depth = path_depth($can_path);
-	my $path_is_index = ($can_path =~ m#/$#);
+	my $path_is_index = ($can_path =~ m#/$#o);
 	if ($path_depth == $depth)
 	{
 	    shift @{$paths_ref}; # use this path
@@ -1675,18 +1675,19 @@ sub filter_out_paths {
     my $hide = $args{hide};
     my $nohide = $args{nohide};
     my $current_url_depth = path_depth($args{current_url});
-    my $current_url_is_index = ($args{current_url} =~ m#/$#);
+    my $current_url_is_index = ($args{current_url} =~ m#/$#o);
     # the current-url dir is the current url without the filename
     my $current_index_path = get_index_path($args{current_url});
     my $current_index_path_depth = path_depth($current_index_path);
     my $current_index_parent = get_index_parent($args{current_url});
 
-    my @wantedpaths = ();
+    my %canon_paths = ();
+    my @wantedpaths1 = ();
+    my %path_depth = ();
     foreach my $path (@{$paths_ref})
     {
 	my $can_path = make_canonical($path);
 	my $path_depth = path_depth($can_path);
-	my $path_is_index = ($can_path =~ m#/$#);
 	if ($hide and $nohide
 	    and not($path =~ /$nohide/)
 	    and $path =~ /$hide/)
@@ -1706,73 +1707,90 @@ sub filter_out_paths {
 	{
 	    # skip this one
 	}
-	# a breadcrumb-navbar shows the parent, self,
-	# and the children of dirs or siblings of non-dirs
-	elsif ($args{navbar_type} eq 'breadcrumb'
-	    and $args{current_url}
-	    and !(
-	     ($path_depth <= $current_url_depth
-	      and $args{current_url} =~ /^$path/)
-	     or (
-		 $path eq $args{current_url}
-		)
-	     or (
-		 $current_url_is_index
-		 and $path_depth >= $current_url_depth
-		 and $path =~ /^$current_index_path\//
-		)
-	     or (
-		 !$current_url_is_index
-		 and $path_depth >= $current_url_depth
-		 and $path =~ /^$current_index_parent\//
-		)
-	    )
-	   )
-	{
-	    # skip this one
-	}
-	# a navbar shows the parent, the children
-	# and the current level
-	# and the top level (if we are starting at $top_level)
-	# and the siblings of one's parent if one is a contents-page
-	# or siblings of oneself if one is an index-page
-	elsif (($args{navbar_type}
-	    or $args{do_navbar}) # backwards compatibility
-	    and $args{current_url}
-	    and !(
-	     ($path_depth <= $current_url_depth
-	      and $args{current_url} =~ /^$path/)
-	     or (
-		 $path eq $args{current_url}
-		)
-	     or (
-		 $path_depth >= $current_url_depth 
-		 and $path =~ /^$current_index_path\//
-		)
-	     or (
-		 $args{start_depth} == $args{top_level}
-		 and $path_depth == $args{start_depth}
-		)
-	     or (
-		 !$current_url_is_index
-		 and $path_depth == $current_url_depth - 1
-		 and $path =~ /^$current_index_parent\//
-		)
-	     or (
-		 $current_url_is_index
-		 and $path_depth == $current_url_depth
-		 and $path =~ /^$current_index_parent\//
-		)
-	    )
-	   )
-	{
-	    # skip this one
-	}
 	else
 	{
-	    # keep this path
-	    push @wantedpaths, $path;
+	    $path_depth{$path} = $path_depth;
+	    $canon_paths{$path} = $can_path;
+	    push @wantedpaths1, $path;
 	}
+    }
+
+    my @wantedpaths = ();
+    if ($args{current_url})
+    {
+	foreach my $path (@wantedpaths1)
+	{
+	    my $path_depth = $path_depth{$path};
+	    # a breadcrumb-navbar shows the parent, self,
+	    # and the children of dirs or siblings of non-dirs
+	    if ($args{navbar_type} eq 'breadcrumb'
+		and !(
+		      ($path_depth <= $current_url_depth
+		       and $args{current_url} =~ /^$path/)
+		      or (
+			  $path eq $args{current_url}
+			 )
+		      or (
+			  $current_url_is_index
+			  and $path_depth >= $current_url_depth
+			  and $path =~ /^$current_index_path\//
+			 )
+		      or (
+			  !$current_url_is_index
+			  and $path_depth >= $current_url_depth
+			  and $path =~ /^$current_index_parent\//
+			 )
+		     )
+	       )
+	    {
+		# skip this one
+	    }
+	    # a navbar shows the parent, the children
+	    # and the current level
+	    # and the top level (if we are starting at $top_level)
+	    # and the siblings of one's parent if one is a contents-page
+	    # or siblings of oneself if one is an index-page
+	    elsif (($args{navbar_type}
+		    or $args{do_navbar}) # backwards compatibility
+		   and !(
+			 ($path_depth <= $current_url_depth
+			  and $args{current_url} =~ /^$path/)
+			 or (
+			     $path eq $args{current_url}
+			    )
+			 or (
+			     $path_depth >= $current_url_depth 
+			     and $path =~ /^$current_index_path\//
+			    )
+			 or (
+			     $args{start_depth} == $args{top_level}
+			     and $path_depth == $args{start_depth}
+			    )
+			 or (
+			     !$current_url_is_index
+			     and $path_depth == $current_url_depth - 1
+			     and $path =~ /^$current_index_parent\//
+			    )
+			 or (
+			     $current_url_is_index
+			     and $path_depth == $current_url_depth
+			     and $path =~ /^$current_index_parent\//
+			    )
+			 )
+			 )
+			 {
+			     # skip this one
+			 }
+	    else
+	    {
+		# keep this path
+		push @wantedpaths, $path;
+	    }
+	}
+    }
+    else
+    {
+	push @wantedpaths, @wantedpaths1;
     }
     return @wantedpaths;
 } # filter_out_paths
