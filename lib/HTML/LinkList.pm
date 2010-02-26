@@ -684,7 +684,6 @@ sub full_tree {
 		nohide=>'',
 		preserve_order=>0,
 		preserve_paths=>0,
-		nofilter_paths=>0,
 		labels=>{},
 		start_depth=>0,
 		end_depth=>0,
@@ -702,11 +701,7 @@ sub full_tree {
 	$args{labels}->{'/'} = 'Home';
     }
     my @path_list = ();
-    if ($args{nofilter_paths})
-    {
-	@path_list = @{$args{paths}};
-    }
-    elsif ($args{preserve_paths})
+    if ($args{preserve_paths})
     {
 	@path_list = filter_out_paths(%args, paths=>$args{paths});
     }
@@ -1016,7 +1011,6 @@ sub nav_tree {
 		nohide=>'',
 		preserve_order=>1,
 		preserve_paths=>0,
-		nofilter_paths=>0,
 		include_home=>0,
 		labels=>{},
 		start_depth=>1,
@@ -1045,11 +1039,7 @@ sub nav_tree {
 	$args{labels}->{'/'} = 'Home';
     }
     my @path_list = ();
-    if ($args{nofilter_paths})
-    {
-	@path_list = @{$args{paths}};
-    }
-    elsif ($args{preserve_paths})
+    if ($args{preserve_paths})
     {
 	@path_list = filter_out_paths(%args, paths=>$args{paths});
     }
