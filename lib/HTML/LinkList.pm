@@ -1260,15 +1260,15 @@ sub make_canonical {
     my $url = shift;
 
     return $url if (!$url);
-    if ($url =~ m#^/index\.\w+$#o)
+    if ($url =~ m{^/index\.\w+$}o)
     {
 	$url = '/';
     }
-    elsif ($url =~ m#^(.*/)index\.\w+$#o)
+    elsif ($url =~ m{^(.*/)index\.\w+$}o)
     {
 	$url = $1;
     }
-    elsif ($url =~ m#/[-\w]+$#o) # no dots; a directory
+    elsif ($url =~ m{/[-\w]+$}o) # no dots; a directory
     {
 	$url = join('', $url, '/'); # add the slash
     }
@@ -1290,11 +1290,11 @@ sub get_index_path {
 
     return $url if (!$url);
     $url = make_canonical($url);
-    if ($url =~ m#^(.*)/[-\w]+\.\w+$#o)
+    if ($url =~ m{^(.*)/[-\w]+\.\w+$}o)
     {
 	$url = $1;
     }
-    elsif ($url ne '/' and $url =~ m!/$!o)
+    elsif ($url ne '/' and $url =~ m{/$}o)
     {
 	chop $url;
     }
@@ -1684,16 +1684,13 @@ sub filter_out_paths {
     my $paths_ref = $args{paths};
     my $hide = $args{hide};
     my $nohide = $args{nohide};
-    my $current_url_depth = path_depth($args{current_url});
-    my $current_url_is_index = ($args{current_url} =~ m#/$#o);
-    # the current-url dir is the current url without the filename
-    my $current_index_path = get_index_path($args{current_url});
-    my $current_index_path_depth = path_depth($current_index_path);
-    my $current_index_parent = get_index_parent($args{current_url});
 
     my %canon_paths = ();
     my @wantedpaths1 = ();
     my %path_depth = ();
+
+    # filter out common things
+    # remember canonical paths and path depths
     foreach my $path (@{$paths_ref})
     {
 	my $can_path = make_canonical($path);
@@ -1728,74 +1725,97 @@ sub filter_out_paths {
     my @wantedpaths = ();
     if ($args{current_url})
     {
-	foreach my $path (@wantedpaths1)
+	my $current_url = $args{current_url};
+	my $current_url_depth = path_depth($args{current_url});
+	my $current_url_is_index = ($args{current_url} =~ m{/$}o);
+
+	my $parent = make_canonical($current_url_is_index
+		      ? get_index_parent($args{current_url})
+		      : get_index_path($args{current_url})
+		     );
+	my $parent_depth = path_depth($parent);
+	my $grandparent = ($parent_depth == 1
+			   ? '/'
+			   : make_canonical(get_index_parent($parent)));
+	my $greatgrandparent = ($parent_depth <= 1
+				? ''
+				: ($parent_depth == 2
+				   ? '/'
+				   : make_canonical(get_index_parent($grandparent))
+				  )
+			       );
+	my $current_index_path = get_index_path($args{current_url});
+	my $current_index_parent = get_index_parent($args{current_url});
+
+	if ($args{navbar_type} eq 'breadcrumb')
 	{
-	    my $path_depth = $path_depth{$path};
-	    # a breadcrumb-navbar shows the parent, self,
-	    # and the children of dirs or siblings of non-dirs
-	    if ($args{navbar_type} eq 'breadcrumb'
-		and !(
-		      ($path_depth <= $current_url_depth
-		       and $args{current_url} =~ /^$path/)
-		      or (
-			  $path eq $args{current_url}
-			 )
-		      or (
-			  $current_url_is_index
-			  and $path_depth >= $current_url_depth
-			  and $path =~ /^$current_index_path\//
-			 )
-		      or (
-			  !$current_url_is_index
-			  and $path_depth >= $current_url_depth
-			  and $path =~ /^$current_index_parent\//
-			 )
-		     )
-	       )
+	    foreach my $path (@wantedpaths1)
 	    {
-		# skip this one
+		my $pd = $path_depth{$path};
+		# a breadcrumb-navbar shows the parent, self,
+		# and the children the parent
+		if ($pd <= $current_url_depth
+		    and $args{current_url} =~ /^$path/)
+		{
+		    push @wantedpaths, $path;
+		}
+		elsif ($path eq $args{current_url})
+		{
+		    push @wantedpaths, $path;
+		}
+		elsif ($pd >= $current_url_depth
+		    and $path =~ m{^${current_url}})
+		{
+		    push @wantedpaths, $path;
+		}
+		elsif ($parent
+		       and $pd >= $current_url_depth
+		       and $path =~ m{^$parent})
+		{
+		    push @wantedpaths, $path;
+		}
 	    }
-	    # a navbar shows the parent, the children
-	    # and the current level
-	    # and the top level (if we are starting at $top_level)
-	    # and the siblings of one's parent if one is a contents-page
-	    # or siblings of oneself if one is an index-page
-	    elsif (($args{navbar_type}
-		    or $args{do_navbar}) # backwards compatibility
-		   and !(
-			 ($path_depth <= $current_url_depth
-			  and $args{current_url} =~ /^$path/)
-			 or (
-			     $path eq $args{current_url}
-			    )
-			 or (
-			     $path_depth >= $current_url_depth 
-			     and $path =~ /^$current_index_path\//
-			    )
-			 or (
-			     $args{start_depth} == $args{top_level}
-			     and $path_depth == $args{start_depth}
-			    )
-			 or (
-			     !$current_url_is_index
-			     and $path_depth == $current_url_depth - 1
-			     and $path =~ /^$current_index_parent\//
-			    )
-			 or (
-			     $current_url_is_index
-			     and $path_depth == $current_url_depth
-			     and $path =~ /^$current_index_parent\//
-			    )
-			 )
-			 )
-			 {
-			     # skip this one
-			 }
-	    else
+	}
+	elsif ($args{navbar_type} or $args{do_navbar})
+	{
+	    # Rules for navbars:
+	    # * if I am a leaf node, see my (great)uncles and siblings
+	    # * if have children, use the same data as my parent,
+	    #   plus my immediate children
+	    foreach my $path (@wantedpaths1)
 	    {
-		# keep this path
-		push @wantedpaths, $path;
+		my $pd = $path_depth{$path};
+		if ($pd > $current_url_depth + 1)
+		{
+		    next;
+		}
+		if ($pd == $current_url_depth + 1
+		    and $path =~ m{^${current_url}})
+		{
+		    push @wantedpaths, $path;
+		}
+		elsif ($pd == $current_url_depth
+		       and $path =~ m{^${parent}})
+		{
+		    push @wantedpaths, $path;
+		}
+		elsif ($grandparent
+		       and $pd == $parent_depth
+		       and $path =~ m{^$grandparent})
+		{
+		    push @wantedpaths, $path;
+		}
+		elsif ($greatgrandparent
+		    and $pd == $parent_depth - 1
+		    and $path =~ m{^$greatgrandparent})
+		{
+		    push @wantedpaths, $path;
+		}
 	    }
+	}
+	else
+	{
+	    push @wantedpaths, @wantedpaths1;
 	}
     }
     else

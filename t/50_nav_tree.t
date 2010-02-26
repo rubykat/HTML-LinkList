@@ -1,6 +1,6 @@
 # testing nav_tree
 use strict;
-use Test::More tests => 22;
+use Test::More tests => 24;
 
 use HTML::LinkList qw(nav_tree);
 
@@ -394,6 +394,38 @@ ok($link_html, "($test_count) start_depth=2, top_level=2; links HTML");
 $ok_str = '<ul><li><a href="/dunes/about/">About</a></li>
 <li><em>Products</em>
 <ul><li><a href="/dunes/products/operations_control/">Operations Control</a></li>
+<li><a href="/dunes/products/crewing/">Crewing</a></li>
+<li><a href="/dunes/products/maintenance/">Maintenance</a></li>
+</ul></li>
+<li><a href="/dunes/solutions/">Solutions</a></li>
+<li><a href="/dunes/services/">Services</a></li>
+<li><a href="/dunes/news/">News</a></li>
+</ul>';
+is($link_html, $ok_str, "($test_count) start_depth=2, top_level=2; values match");
+
+# make an example html file of the difference
+if ($link_html ne $ok_str)
+{
+    make_test_html(link_html=>$link_html,
+	ok_str=>$ok_str,
+	test_count=>$test_count);
+}
+
+# lower level
+$test_count++;
+$link_html = nav_tree(labels=>\%labels,
+    paths=>\@links,
+    start_depth=>2,
+    top_level=>2,
+    current_url=>'/dunes/products/operations_control/Airpac.html');
+ok($link_html, "($test_count) start_depth=2, top_level=2; lower level links HTML");
+
+$ok_str = '<ul><li><a href="/dunes/about/">About</a></li>
+<li><a href="/dunes/products/">Products</a>
+<ul><li><a href="/dunes/products/operations_control/">Operations Control</a>
+<ul><li><em>Airpac</em></li>
+<li><a href="/dunes/products/operations_control/Airpac_Overview.pdf">Airpac Overview</a></li>
+</ul></li>
 <li><a href="/dunes/products/crewing/">Crewing</a></li>
 <li><a href="/dunes/products/maintenance/">Maintenance</a></li>
 </ul></li>
