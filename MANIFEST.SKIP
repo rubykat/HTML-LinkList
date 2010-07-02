@@ -3,12 +3,15 @@
 \bCVS\b
 ,v$
 ^_darcs/
+^\.git/
+^\.gitignore$
 
 # ModDevAid
 ^version.txt$
 ^old_version.txt$
 ^darcs_prebuild.pl$
 ^mod_devaid.conf$
+^\.todo$
 
 # distro files
 ^HTML-LinkList-*
