@@ -1,6 +1,6 @@
 # testing nav_tree
 use strict;
-use Test::More tests => 24;
+use Test::More tests => 26;
 
 use HTML::LinkList qw(nav_tree);
 
@@ -345,6 +345,39 @@ $ok_str = '<ul><li><a href="/">Home</a></li>
 <li><a href="/news/">News</a></li>
 </ul>';
 is($link_html, $ok_str, "($test_count) more links; include Home; values match");
+
+# make an example html file of the difference
+if ($link_html ne $ok_str)
+{
+    make_test_html(link_html=>$link_html,
+	ok_str=>$ok_str,
+	test_count=>$test_count);
+}
+
+# more current_parent stuff
+$test_count++;
+$link_html = nav_tree(labels=>\%labels,
+    paths=>\@links,
+    prepend_list=>[qw(/)],
+    exclude_root_parent=>1,
+    pre_item_current_parent=>'<li class="parent">',
+    current_url=>'/products/crewing/');
+ok($link_html, "($test_count) more links; pre_item_current_parent; links HTML");
+
+$ok_str = '<ul><li><a href="/">Home</a></li>
+<li><a href="/about/">About</a></li>
+<li class="parent"><a href="/products/">Products</a>
+<ul><li><a href="/products/operations_control/">Operations Control</a></li>
+<li><em>Crewing</em>
+<ul><li><a href="/products/crewing/Crew_Rostering.pdf">Crew Rostering</a></li>
+</ul></li>
+<li><a href="/products/maintenance/">Maintenance</a></li>
+</ul></li>
+<li><a href="/solutions/">Solutions</a></li>
+<li><a href="/services/">Services</a></li>
+<li><a href="/news/">News</a></li>
+</ul>';
+is($link_html, $ok_str, "($test_count) more links; pre_item_current_parent; values match");
 
 # make an example html file of the difference
 if ($link_html ne $ok_str)

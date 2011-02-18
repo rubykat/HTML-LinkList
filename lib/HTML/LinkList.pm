@@ -225,6 +225,10 @@ String to append to each item.
 An additional string to put in front of each "active" item, after pre_item.
 The "active" item is the link which matches 'current_url'.
 
+=item pre_item_active
+
+INSTEAD of the "pre_item" string, use this string for active items
+
 =item post_active_item
 
 An additional string to append to each active item, before post_item.
@@ -263,17 +267,7 @@ sub link_list {
     }
     my %format = (exists $args{format}
 	? %{$args{format}}
-	: (
-	    pre_item=>$args{pre_item},
-	    post_item=>$args{post_item},
-	    pre_active_item=>$args{pre_active_item},
-	    post_active_item=>$args{post_active_item},
-	    pre_current_parent=>$args{pre_current_parent},
-	    post_current_parent=>$args{post_current_parent},
-	    pre_desc=>$args{pre_desc},
-	    post_desc=>$args{post_desc},
-	    item_sep=>$args{item_sep},
-	));
+	: make_default_format(%args));
     # correct the current_url
     $args{current_url} = make_canonical($args{current_url});
     my %current_parents = extract_current_parents(%args);
@@ -443,6 +437,10 @@ An additional string to put in front of each "active" item, after pre_item.
 The "active" item is the link which matches 'current_url'.
 (default: <em>)
 
+=item pre_item_active
+
+INSTEAD of the "pre_item" string, use this string for active items
+
 =item post_active_item
 
 An additional string to append to each active item, before post_item.
@@ -452,6 +450,11 @@ An additional string to append to each active item, before post_item.
 
 An additional string to put in front of a link which is a parent
 of the 'current_url' link, after pre_item.
+
+=item pre_item_current_parent
+
+INSTEAD of the "pre_item" string, use this for links which are parents
+of the 'current_url' link.
 
 =item post_current_parent
 
@@ -1200,7 +1203,7 @@ sub make_item {
     if (link_is_active(this_link=>$link,
 	current_url=>$args{current_url}))
     {
-	$item = join('', $format{pre_item},
+	$item = join('', $format{pre_item_active},
 		     $format{pre_active_item},
 		     $label,
 		     $format{post_active_item},
@@ -1217,7 +1220,7 @@ sub make_item {
 	and exists $args{current_parents}->{$link}
 	and $args{current_parents}->{$link})
     {
-	$item = join('', $format{pre_item},
+	$item = join('', $format{pre_item_current_parent},
 		     $format{pre_current_parent},
 		     '<a href="', $prefix_url, $display_link, '">',
 		     $label, '</a>',
@@ -1854,6 +1857,13 @@ sub make_default_format {
 			  tree_sep=>$args{tree_sep},
 			  tree_head=>$args{links_head},
 			  tree_foot=>$args{links_foot},
+			  pre_item_active=>($args{pre_item_active}
+					    ? $args{pre_item_active}
+					    : $args{pre_item}),
+			  pre_item_current_parent=>
+			  ($args{pre_item_current_parent}
+			   ? $args{pre_item_current_parent}
+			   : $args{pre_item}),
 			 );
     return %default_format;
 } # make_default_format
@@ -1878,6 +1888,8 @@ sub make_extra_formats {
 		last_subtree_foot=>"\n</ul>",
 		pre_item=>'<li>',
 		post_item=>'</li>',
+		pre_item_active=>'<li>',
+		pre_item_current_parent=>'<li>',
 		pre_active_item=>'<em>',
 		post_active_item=>'</em>',
 		pre_current_parent=>'',
