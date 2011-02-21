@@ -156,7 +156,7 @@ is($link_html, $ok_str, "($test_count) formats; values match");
 
 # Mixed caps in links
 $test_count++;
-my @links = qw(
+@links = qw(
 /foo/bar/baz.html
 /fooish.html
 /bringle/
@@ -165,7 +165,7 @@ my @links = qw(
 /industry/TLA_foo.html
 /industry/TLA_Bar.html
 );
-my %labels = (
+%labels = (
 '/tray/nav.html' => 'Navigation',
 );
 $link_html = full_tree(labels=>\%labels,
