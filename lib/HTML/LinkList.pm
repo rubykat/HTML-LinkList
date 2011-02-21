@@ -1177,7 +1177,7 @@ sub make_item {
 	# prettify
 	$label =~ s#_# #go;
 	$label =~ s#-# #go;
-	$label =~ s/([-\w]+)/\u\L$1/go;
+	$label =~ s/(\b[a-z][-\w]+)/\u\L$1/go;
     }
     # if we are hiding the extensions of files
     # we need to display an extensionless link
