@@ -3,3 +3,6 @@ META.yml
 Makefile.PL
 _build/
 blib
+HTML-LinkList*
+.build/
+.perlcritic_history

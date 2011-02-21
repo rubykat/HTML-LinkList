@@ -6,12 +6,9 @@
 ^\.git/
 ^\.gitignore$
 
-# ModDevAid
-^version.txt$
-^old_version.txt$
-^darcs_prebuild.pl$
-^mod_devaid.conf$
+# Dev
 ^\.todo$
+^dist.ini$
 
 # distro files
 ^HTML-LinkList-*
@@ -22,11 +19,11 @@
 ^blibdirs$
 ^pm_to_blib$
 ^MakeMaker-\d
-                                                                                                                    
+
 # Module::Build
 ^Build$
 ^_build/
-                                                                                                                    
+
 # Temp, old, vi and emacs files.
 ~$
 \.old$
