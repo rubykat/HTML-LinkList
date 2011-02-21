@@ -6,14 +6,6 @@ use warnings;
 
 HTML::LinkList - Create a 'smart' list of HTML links.
 
-=head1 VERSION
-
-This describes version B<0.150301> of HTML::LinkList.
-
-=cut
-
-our $VERSION = '0.150301';
-
 =head1 SYNOPSIS
 
     use HTML::LinkList qw(link_list);
