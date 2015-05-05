@@ -1,4 +1,5 @@
 package HTML::LinkList;
+
 use strict;
 use warnings;
 
